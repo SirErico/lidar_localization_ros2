@@ -20,19 +20,25 @@ def generate_launch_description():
 
     ld = launch.LaunchDescription()
 
-    lidar_tf = launch_ros.actions.Node(
-        name='lidar_tf',
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        arguments=['0','0','0','0','0','0','1','base_link','velodyne']
-        )
+    # Note: Your robot should already publish these transforms
+    # Only add these if they're missing from your robot's URDF/TF tree
+    # lidar_tf = launch_ros.actions.Node(
+    #     name='lidar_tf',
+    #     package='tf2_ros',
+    #     executable='static_transform_publisher',
+    #     arguments=['0','0','0','0','0','0','1','j100_0000/base_link','j100_0000/velodyne'],
+    #     remappings=[('/tf','/j100_0000/tf'),
+    #         ('/tf_static','/j100_0000/tf_static')],
+    #     )
 
-    imu_tf = launch_ros.actions.Node(
-        name='imu_tf',
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        arguments=['0','0','0','0','0','0','1','base_link','imu_link']
-        )
+    # imu_tf = launch_ros.actions.Node(
+    #     name='imu_tf',
+    #     package='tf2_ros',
+    #     executable='static_transform_publisher',
+    #     arguments=['0','0','0','0','0','0','1','j100_0000/base_link','j100_0000/imu_link'],
+    #     remappings=[('/tf','/j100_0000/tf'),
+    #         ('/tf_static','/j100_0000/tf_static')],
+    #     )
 
     localization_param_dir = launch.substitutions.LaunchConfiguration(
         'localization_param_dir',
@@ -47,7 +53,14 @@ def generate_launch_description():
         package='pcl_localization_ros2',
         executable='pcl_localization_node',
         parameters=[localization_param_dir],
-        remappings=[('/cloud','/velodyne_points')],
+        remappings=[
+            ('velodyne_points', '/j100_0000/sensors/lidar3d_0/points'),  # Point cloud input
+            ('imu', '/j100_0000/sensors/imu_0/data'),
+            ('odom', '/j100_0000/platform/odom'),
+            ('initialpose', '/j100_0000/initialpose'),
+            ('/tf', '/j100_0000/tf'),
+            ('/tf_static', '/j100_0000/tf_static'),     
+        ],
         output='screen')
 
     to_inactive = launch.actions.EmitEvent(
@@ -90,7 +103,7 @@ def generate_launch_description():
     ld.add_action(from_inactive_to_active)
 
     ld.add_action(pcl_localization)
-    ld.add_action(lidar_tf)
+    # ld.add_action(lidar_tf)  # Uncomment if using static transforms above
     ld.add_action(to_inactive)
 
     return ld

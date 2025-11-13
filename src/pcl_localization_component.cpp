@@ -295,7 +295,12 @@ void PCLLocalization::initialPoseReceived(const geometry_msgs::msg::PoseWithCova
   corrent_pose_with_cov_stamped_ptr_ = msg;
   pose_pub_->publish(*corrent_pose_with_cov_stamped_ptr_);
 
-  cloudReceived(last_scan_ptr_);
+  // Only process last scan if we have received one
+  if (last_scan_ptr_) {
+    cloudReceived(last_scan_ptr_);
+  } else {
+    RCLCPP_INFO(get_logger(), "Initial pose set, waiting for first point cloud");
+  }
   RCLCPP_INFO(get_logger(), "initialPoseReceived end");
 }
 
@@ -328,6 +333,14 @@ void PCLLocalization::mapReceived(const sensor_msgs::msg::PointCloud2::SharedPtr
 void PCLLocalization::odomReceived(const nav_msgs::msg::Odometry::ConstSharedPtr msg)
 {
   if (!use_odom_) {return;}
+  
+  // Check if pose is initialized
+  if (!corrent_pose_with_cov_stamped_ptr_) {
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000, 
+                         "Odometry received but pose not initialized yet");
+    return;
+  }
+  
   RCLCPP_INFO(get_logger(), "odomReceived");
 
   double current_odom_received_time = msg->header.stamp.sec +
