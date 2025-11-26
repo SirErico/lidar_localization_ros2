@@ -99,11 +99,29 @@ def generate_launch_description():
         )
     )
 
+    # RViz2 node for visualization
+    # pkg_pcl_localization = get_package_share_directory('pcl_localization_ros2')
+    # rviz_config_file = os.path.join(pkg_pcl_localization, 'rviz', 'localization.rviz')
+    
+    # Or use clearpath's default RViz config
+    pkg_clearpath = get_package_share_directory('clearpath_nav2_test')
+    rviz_config_file = os.path.join(pkg_clearpath, 'config', 'j100', 'rviz2.rviz')
+
+    rviz_node = launch_ros.actions.Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        arguments=['-d', rviz_config_file],
+        output='screen',
+        additional_env={'MESA_GL_VERSION_OVERRIDE': '3.3'}
+    )
+
     ld.add_action(from_unconfigured_to_inactive)
     ld.add_action(from_inactive_to_active)
 
     ld.add_action(pcl_localization)
     # ld.add_action(lidar_tf)  # Uncomment if using static transforms above
     ld.add_action(to_inactive)
+    ld.add_action(rviz_node)
 
     return ld
